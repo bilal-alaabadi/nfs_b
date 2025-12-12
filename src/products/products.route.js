@@ -35,7 +35,8 @@ router.post("/create-product", async (req, res) => {
       image,
       author,
       size,
-      inStock
+      inStock,
+      salesCount, // جديد
     } = req.body;
 
     if (!name || !category || !description || !price || !image || !author) {
@@ -55,7 +56,11 @@ router.post("/create-product", async (req, res) => {
       author,
       size: size || null,
       // إن لم تُرسل القيمة يأتي افتراضياً من الـ Schema = true
-      inStock: typeof inStock === 'boolean' ? inStock : true
+      inStock: typeof inStock === 'boolean' ? inStock : true,
+      // جديد: عدد المبيعات — إن لم يُرسل نتركه للـ default = 0
+      salesCount: (salesCount === undefined || salesCount === null || salesCount === '')
+        ? undefined
+        : Number(salesCount),
     };
 
     const newProduct = new Products(productData);
@@ -67,6 +72,7 @@ router.post("/create-product", async (req, res) => {
     res.status(500).send({ message: "Failed to create new product" });
   }
 });
+
 
 
 // جميع المنتجات
@@ -135,6 +141,7 @@ router.get(["/:id", "/product/:id"], async (req, res) => {
 });
 
 // تحديث منتج (إظهار/حذف صور حالية + إضافة صور جديدة)
+// ========================= routes/products.js (مقتطف مسار التحديث فقط) =========================
 const multer = require("multer");
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -143,7 +150,7 @@ router.patch(
   "/update-product/:id",
   verifyToken,
   verifyAdmin,
-  upload.array("image"), // استقبال عدة صور جديدة (Files)
+  upload.array("image"),
   async (req, res) => {
     try {
       const productId = req.params.id;
@@ -162,8 +169,15 @@ router.patch(
         size: req.body.size || null,
         author: req.body.author,
         inStock: req.body.inStock === 'true',
-
       };
+
+      // ✅ السماح بتعديل عدد المبيعات (اختياري)
+      if (typeof req.body.salesCount !== 'undefined') {
+        const sc = Number(req.body.salesCount);
+        if (!Number.isNaN(sc) && sc >= 0) {
+          updateData.salesCount = sc;
+        }
+      }
 
       if (!updateData.name || !updateData.category || !updateData.price || !updateData.description) {
         return res.status(400).send({ message: "جميع الحقول المطلوبة يجب إرسالها" });
@@ -172,7 +186,6 @@ router.patch(
         return res.status(400).send({ message: "يجب تحديد حجم الحناء" });
       }
 
-      // keepImages مُرسلة من الواجهة كنص JSON
       let keepImages = [];
       if (typeof req.body.keepImages === "string" && req.body.keepImages.trim() !== "") {
         try {
@@ -183,7 +196,6 @@ router.patch(
         }
       }
 
-      // رفع الصور الجديدة (إن وُجدت) من الـ buffer إلى Cloudinary
       let newImageUrls = [];
       if (Array.isArray(req.files) && req.files.length > 0) {
         newImageUrls = await Promise.all(
@@ -191,11 +203,9 @@ router.patch(
         );
       }
 
-      // إن كان هناك تعديل للصور، دمّج المُبقاة + الجديدة
       if (keepImages.length > 0 || newImageUrls.length > 0) {
         updateData.image = [...keepImages, ...newImageUrls];
       } else {
-        // لا نلمس الصور إن لم تصل keepImages ولم ترفع صور جديدة
         delete updateData.image;
       }
 

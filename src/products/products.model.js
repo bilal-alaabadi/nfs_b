@@ -13,6 +13,9 @@ const ProductSchema = new mongoose.Schema(
 
     // جديد: حالة التوفر
     inStock:     { type: Boolean, default: true },
+
+    // جديد: عدد المبيعات (اختياري – افتراضي 0)
+    salesCount:  { type: Number, default: 0 },
   },
   { timestamps: true }
 );
