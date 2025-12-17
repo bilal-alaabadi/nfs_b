@@ -7,7 +7,7 @@ const app = express();
 const path = require("path");
 require("dotenv").config();
 const cookieParser = require("cookie-parser");
-const port = process.env.PORT || 5013;
+const port =5013;
 
 // Remove bodyParser (redundant with express.json())
 app.use(express.json({ limit: "25mb" }));  // Handles JSON payloads

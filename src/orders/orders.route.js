@@ -109,8 +109,10 @@ router.post("/create-checkout-session", async (req, res) => {
   } = req.body;
 
   // رسوم الشحن (ر.ع.)
-   const shippingFee =
-    country === "دول الخليج"
+const shippingFee =
+  shippingMethod === "دفع الشحن عند الاستلام"
+    ? 0
+    : country === "دول الخليج"
       ? (gulfCountry === "الإمارات" ? 4 : 5)
       : (shippingMethod === "المكتب" ? 1 : 2);
 
@@ -145,7 +147,13 @@ router.post("/create-checkout-session", async (req, res) => {
         return { name: String(p.name || "منتج"), quantity: qty, unit_amount: toBaisa(unitAfterDiscount) };
       });
 
-      lineItems.push({ name: "رسوم الشحن", quantity: 1, unit_amount: toBaisa(shippingFee) });
+if (shippingFee > 0) {
+  lineItems.push({
+    name: "رسوم الشحن",
+    quantity: 1,
+    unit_amount: toBaisa(shippingFee),
+  });
+}
       amountToCharge = originalTotal;
     }
 
@@ -210,7 +218,7 @@ router.post("/create-checkout-session", async (req, res) => {
       return res.status(500).json({ error: "No session_id returned from Thawani", details: response?.data });
     }
 
-    const paymentLink = `https://checkout.thawani.om/pay/${sessionId}?key=${THAWANI_PUBLISH_KEY}`;
+    const paymentLink = `https://uatcheckout.thawani.om/pay/${sessionId}?key=${THAWANI_PUBLISH_KEY}`;
     res.json({ id: sessionId, paymentLink });
   } catch (error) {
     console.error("Error creating checkout session:", error?.response?.data || error);
