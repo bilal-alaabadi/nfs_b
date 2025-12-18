@@ -218,7 +218,7 @@ if (shippingFee > 0) {
       return res.status(500).json({ error: "No session_id returned from Thawani", details: response?.data });
     }
 
-    const paymentLink = `https://uatcheckout.thawani.om/pay/${sessionId}?key=${THAWANI_PUBLISH_KEY}`;
+    const paymentLink = `https://checkout.thawani.om/pay/${sessionId}?key=${THAWANI_PUBLISH_KEY}`;
     res.json({ id: sessionId, paymentLink });
   } catch (error) {
     console.error("Error creating checkout session:", error?.response?.data || error);
